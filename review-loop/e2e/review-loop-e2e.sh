@@ -161,7 +161,10 @@ s4() {
   tui_send $S "把一行文字 hello 写进 .omo/notes/x.md 文件（用写文件工具），不要动其他文件。"
   DBG="$R/.review-loop/plugin-debug.log"
   wait_log "$DBG" "gate=edits BLOCK" 300 || log "  ⚠ S4 未捕获 gate=edits BLOCK"
-  assert "S4a gate=edits BLOCK（.omo 不算产品编辑）" grep -aq "gate=edits BLOCK" "$DBG"
+  # S4a 接受任一零欠债 BLOCK 行（ag-8128ba 实证：模型路径回显噪音（西里尔 о/双 o）→ 写失败
+  # → 挣扎；existsSync 后幻影写入已不计，但挣扎落盘 tmp 再挪入 .omo 的形态会以 worktree
+  # BLOCK(no debt) 呈现——终态等价：omo 噪声零欠债零注入，判定语义一致）
+  assert "S4a gate=edits/worktree BLOCK（.omo 不算产品编辑）" bash -c "grep -aqE 'gate=(edits|worktree) BLOCK' $DBG 2>/dev/null"
   assert "S4b 无注入" bash -c "! grep -aq 'injected OK' $DBG 2>/dev/null"
   tmux kill-session -t $S 2>/dev/null
 }
@@ -525,7 +528,7 @@ s14() {
 # stub 两模式：消息含 /review-loop → 评审模式（prompt 落盘+可控 sleep/退码）；否则工作模式（真实 git commit 落真实旗标）
 WRAP="$(cd "$(dirname "$(readlink -f "${BASH_SOURCE[0]}")")" && pwd)/../run-with-review.sh"
 WSTUBBIN="$(mktemp -d)/stubbin" # 逐跑唯一：固定 /tmp 路径可被多用户主机预植入 stub 劫持（2026-11-08 评审 C1）
-trap 'rm -rf "$(dirname "$WSTUBBIN")" "$RL_CFGROOT"' EXIT # 逐跑唯一伴随逐跑回收：stub 目录无调试价值，防 /tmp 累积（2026-11-08 ocr 轮2）；连带沙箱 config 根
+trap 'rm -rf "$(dirname "$WSTUBBIN")" ${RL_CFGROOT:+"$RL_CFGROOT"}' EXIT # 逐跑唯一伴随逐跑回收：stub 目录无调试价值，防 /tmp 累积（2026-11-08 ocr 轮2）；连带沙箱 config 根（空值跳过＝W-only 跑无沙箱，ocr 轮3）
 WENV=()
 
 # ── 场景 serve 配置隔离（ag-8128ba 根因修复）──
@@ -541,17 +544,26 @@ WENV=()
 # ⚠ package.json 必须在场（内容任意，private 即可）：实证 v2.2.6 TUI 启动路径下，config 根
 # 无 package.json 时自定义 provider 的 settings.baseURL 不生效（请求落 zai 默认上游→401
 # token expired）；headless `opencode run` 不受影响。bisect 取证 2026-11-08。
-RL_SRC_CFG="${XDG_CONFIG_HOME:-$HOME/.config}/opencode/opencode.json"
-RL_CFGROOT="$(mktemp -d "${TMPDIR:-/tmp}/rl-e2e-cfg.XXXXXX")"
-RLCFG="$RL_CFGROOT/opencode"; mkdir -p "$RLCFG/plugins" "$RLCFG/command"
-if ! python3 -c 'import json,sys; c=json.load(open(sys.argv[1])); [c.pop(k,None) for k in ("mcp","plugins")]; json.dump(c,open(sys.argv[2],"w"),indent=2)' "$RL_SRC_CFG" "$RLCFG/opencode.json"; then
-  rm -rf "$RL_CFGROOT"; echo "e2e: 沙箱 config 生成失败（缺失或不可读: $RL_SRC_CFG）" >&2; exit 1
-fi
-printf '{"name":"rl-e2e-sandbox","private":true}\n' > "$RLCFG/package.json"
-ln -sfn "$HOOKSRC/../review-loop-trigger.ts" "$RLCFG/plugins/review-loop-trigger.ts"
-ln -sfn "$HOOKSRC/../command/review-loop.md" "$RLCFG/command/review-loop.md"
-[ -f "${XDG_CONFIG_HOME:-$HOME/.config}/opencode/plugins/open-code-review.ts" ] && ln -sfn "${XDG_CONFIG_HOME:-$HOME/.config}/opencode/plugins/open-code-review.ts" "$RLCFG/plugins/open-code-review.ts"
-[ -d "${XDG_CONFIG_HOME:-$HOME/.config}/opencode/node_modules" ] && ln -sfn "${XDG_CONFIG_HOME:-$HOME/.config}/opencode/node_modules" "$RLCFG/node_modules"
+RL_CFGROOT=""; RLCFG="" # 缺省置空：EXIT trap 与底部沙箱日志引用安全（set -u）；W-only 跑不建沙箱（stub opencode 不读 config，ocr 轮3）
+SEL="${*:-S1 S2 S3 S4 S16 S6 S7 S8 S9 S10 S11 S12 S13 S14 S15 W1 W2 W3 W4 W5 W6 W7 W8}"
+case " $SEL " in
+*" S"*)
+  RL_SRC_CFG="${XDG_CONFIG_HOME:-$HOME/.config}/opencode"
+  RL_CFGROOT="$(mktemp -d "${TMPDIR:-/tmp}/rl-e2e-cfg.XXXXXX")"
+  RLCFG="$RL_CFGROOT/opencode"; mkdir -p "$RLCFG/plugins" "$RLCFG/command"
+  if ! python3 -c 'import json,sys; c=json.load(open(sys.argv[1])); [c.pop(k,None) for k in ("mcp","plugins")]; json.dump(c,open(sys.argv[2],"w"),indent=2)' "$RL_SRC_CFG/opencode.json" "$RLCFG/opencode.json"; then
+    rm -rf "$RL_CFGROOT"; echo "e2e: 沙箱 config 生成失败（缺失或不可读: $RL_SRC_CFG/opencode.json；若为 JSONC（含注释/尾逗号）本套件不解析，需严格 JSON）" >&2; exit 1
+  fi
+  for dep in plugins/open-code-review.ts node_modules; do # 前置缺失即停：静默跳过会让注入评审缺 ocr_review，红灯不可诊断（ocr 轮3）
+    [ -e "$RL_SRC_CFG/$dep" ] || { rm -rf "$RL_CFGROOT"; echo "e2e: 沙箱前置缺失: $RL_SRC_CFG/$dep" >&2; exit 1; }
+  done
+  printf '{"name":"rl-e2e-sandbox","private":true}\n' > "$RLCFG/package.json"
+  ln -sfn "$HOOKSRC/../review-loop-trigger.ts" "$RLCFG/plugins/review-loop-trigger.ts"
+  ln -sfn "$HOOKSRC/../command/review-loop.md" "$RLCFG/command/review-loop.md"
+  ln -sfn "$RL_SRC_CFG/plugins/open-code-review.ts" "$RLCFG/plugins/open-code-review.ts"
+  ln -sfn "$RL_SRC_CFG/node_modules" "$RLCFG/node_modules"
+  ;;
+esac
 
 mkwstub() { # $1=logdir — 建 stub opencode 与干净 logdir（幂等）
   rm -rf "$1"; mkdir -p "$WSTUBBIN" "$1"
@@ -708,8 +720,8 @@ w8() {
 
 
 log "review-loop 信号重设计 e2e — $TS（S1/S5 合并执行）"
-log "config 沙箱: $RLCFG（全局副本剥 mcp/plugins；场景 serve 不继承 agora 等 MCP 面）"
-for s in ${*:-S1 S2 S3 S4 S16 S6 S7 S8 S9 S10 S11 S12 S13 S14 S15 W1 W2 W3 W4 W5 W6 W7 W8}; do
+[ -n "$RLCFG" ] && log "config 沙箱: $RLCFG（全局副本剥 mcp/plugins；场景 serve 不继承 agora 等 MCP 面）"
+for s in $SEL; do
   case "$s" in W*) "w${s#W}" ;; *) "s${s#S}" ;; esac
 done
 cat "$LOG" 2>/dev/null | tail -40

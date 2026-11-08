@@ -154,8 +154,22 @@ export default {
         });
       });
 
+    // 同形字符折叠（ag-8128ba S4 实证）：模型偶发把路径中的拉丁字母发成西里尔/希腊同形字符
+    // （.omо——о=U+043E）→ isOmoPath 被绕过 → omo 噪声计入产品欠债 → 误注入。仅折叠用于噪声
+    // 判定（isOmoPath 全部调用点：工具观测过滤＋porcelain 脏文件归属），不改动观测/落盘路径。
+    // 未映射西里尔/希腊字母剔除（它们不构成拉丁匹配目标，剔除防跨段拼接误配）。
+    const HOMOGLYPH_LATIN = {
+      "а": "a", "е": "e", "о": "o", "р": "p", "с": "c", "у": "y", "х": "x", "і": "i",
+      "ѕ": "s", "ј": "j", "ԁ": "d", "ɡ": "g", "һ": "h", "м": "m", "т": "t", "ѡ": "w",
+      "ο": "o", "α": "a", "ε": "e", "ρ": "p", "ι": "i", "κ": "k", "χ": "x", "ν": "v",
+    };
+    const foldHomoglyphs = (s) =>
+      s
+        .normalize("NFKC") // 全宽拉丁→ASCII
+        .toLowerCase()
+        .replace(/[\u0370-\u03ff\u0400-\u04ff]/g, (c) => HOMOGLYPH_LATIN[c] ?? "");
     const isOmoPath = (p) => {
-      const n = String(p).replace(/\\/g, "/");
+      const n = foldHomoglyphs(String(p).replace(/\\/g, "/"));
       return (
         n === ".omo" || n.startsWith(".omo/") || n.includes("/.omo/") ||
         n === ".review-loop" || n.startsWith(".review-loop/") || n.includes("/.review-loop/") ||
@@ -705,6 +719,9 @@ export default {
       if (!p) return;
       if (isOmoPath(p)) return;
       const absp = p.startsWith("/") ? p : resolve(p); // v2.0.32 drift: edit/write may pass cwd-relative path (e2e S10 实证)——server cwd 解析（standalone=TUI cwd）
+      // 失败的写入不计产品编辑（ag-8128ba S4 实证：模型路径噪音→write 失败→editPaths 记录
+      // 幻影路径→假欠债/假资格误注入）；execute.after 落定后成功写入文件必已存在。
+      if (!existsSync(absp)) return;
       // plan/evidence files are not product edits — .review-loop/（评审环自身工件）、.omo、
       // .agent-experiences 子树已在上方 isOmoPath 一律排除（R1；gt-f23e94 测试钉死）
       const sid = event.sessionID;
