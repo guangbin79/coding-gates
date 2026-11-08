@@ -160,7 +160,7 @@ s4() {
   sleep 15
   tui_send $S "把一行文字 hello 写进 .omo/notes/x.md 文件（用写文件工具），不要动其他文件。"
   DBG="$R/.review-loop/plugin-debug.log"
-  wait_log "$DBG" "gate=edits BLOCK" 300 || log "  ⚠ S4 未捕获 gate=edits BLOCK"
+  wait_log "$DBG" "gate=(edits|worktree) BLOCK" 300 || log "  ⚠ S4 未捕获零欠债 BLOCK（edits|worktree）"
   # S4a 接受任一零欠债 BLOCK 行（ag-8128ba 实证：模型路径回显噪音（西里尔 о/双 o）→ 写失败
   # → 挣扎；existsSync 后幻影写入已不计，但挣扎落盘 tmp 再挪入 .omo 的形态会以 worktree
   # BLOCK(no debt) 呈现——终态等价：omo 噪声零欠债零注入，判定语义一致）

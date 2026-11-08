@@ -161,13 +161,14 @@ export default {
     const HOMOGLYPH_LATIN = {
       "а": "a", "е": "e", "о": "o", "р": "p", "с": "c", "у": "y", "х": "x", "і": "i",
       "ѕ": "s", "ј": "j", "ԁ": "d", "ɡ": "g", "һ": "h", "м": "m", "т": "t", "ѡ": "w",
+      "ӏ": "l",
       "ο": "o", "α": "a", "ε": "e", "ρ": "p", "ι": "i", "κ": "k", "χ": "x", "ν": "v",
     };
     const foldHomoglyphs = (s) =>
       s
         .normalize("NFKC") // 全宽拉丁→ASCII
         .toLowerCase()
-        .replace(/[\u0370-\u03ff\u0400-\u04ff]/g, (c) => HOMOGLYPH_LATIN[c] ?? "");
+        .replace(/[\u0250-\u02ff\u0370-\u03ff\u0400-\u052f]/g, (c) => HOMOGLYPH_LATIN[c] ?? "");
     const isOmoPath = (p) => {
       const n = foldHomoglyphs(String(p).replace(/\\/g, "/"));
       return (
