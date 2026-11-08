@@ -320,7 +320,9 @@ s10() {
   printf '.omo/\n.review-loop/\n' > .gitignore
   printf 'export function hello() { return 1; }\n' > hello.ts
   git add .gitignore hello.ts; git commit -qm "init s10"
-  EXPECTED_HOOKS="$HOME/.dotfiles/.agent/review-loop/hooks" # 稳定路径：ensureHooks 派生路径（插件上两级/hooks）在本布局不存在→恒走 HOME 主仓回退；分支期 e2e 同样吃到主仓钩（hooks 本分支未改，内容等价）
+  LIVE_PLUGIN="$HOME/.config/opencode/plugins/review-loop-trigger.ts" # 与插件同法派生期望钩路径（2026-11-08 单级化锁步）：活插件 realpath 单级 dirname/hooks，缺目录回退 HOME 主仓
+  EXPECTED_HOOKS="$(dirname "$(readlink -f "$LIVE_PLUGIN" 2>/dev/null || echo "$LIVE_PLUGIN")")/hooks"
+  [ -d "$EXPECTED_HOOKS" ] || EXPECTED_HOOKS="$HOME/.dotfiles/.agent/review-loop/hooks" # 派生根缺 hooks（dotfiles 旧布局）→插件 ensureHooks 同款兜底
   tmux kill-session -t $S 2>/dev/null; tmux new-session -d -s $S -x 220 -y 50 "cd $R && MEMORY_PLUGIN_AUTOSTART=0 REVIEW_LOOP_DEBUG=1 REVIEW_LOOP_IDLE_MIN_S=5 opencode --standalone"
   sleep 15
   tui_send $S "把 hello.ts 里的函数名 hello 改成 greet，改完用 git commit -m rename 提交。不要自己运行 /review-loop。"
@@ -523,6 +525,7 @@ s14() {
 # stub 两模式：消息含 /review-loop → 评审模式（prompt 落盘+可控 sleep/退码）；否则工作模式（真实 git commit 落真实旗标）
 WRAP="$(cd "$(dirname "$(readlink -f "${BASH_SOURCE[0]}")")" && pwd)/../run-with-review.sh"
 WSTUBBIN="$(mktemp -d)/stubbin" # 逐跑唯一：固定 /tmp 路径可被多用户主机预植入 stub 劫持（2026-11-08 评审 C1）
+trap 'rm -rf "$(dirname "$WSTUBBIN")"' EXIT # 逐跑唯一伴随逐跑回收：stub 目录无调试价值，防 /tmp 累积（2026-11-08 ocr 轮2）
 WENV=()
 
 mkwstub() { # $1=logdir — 建 stub opencode 与干净 logdir（幂等）
