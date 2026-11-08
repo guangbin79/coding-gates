@@ -148,10 +148,20 @@ export default {
     // 无 -C 无槽位时 dbg 自然 no-op），跳过语义零变化。
     const gitQuiet = (args) =>
       new Promise((resolve) => {
-        execFile("git", args, { maxBuffer: 32 * 1024 * 1024, timeout: 10_000, killSignal: "SIGKILL" }, (err, stdout) => {
-          if (err && (err.signal === "SIGKILL" || err.killed)) dbg(args[0] === "-C" ? args[1] : null, `git timeout ${args.slice(0, 3).join(" ")}`);
-          resolve(err ? null : String(stdout ?? ""));
-        });
+        // err 时单次重试（400ms）：opencode 自身 git（snapshot/watcher）与本插件 status 偶发
+        // index.lock 竞态→瞬时 null 曾把「有欠债」误判成 no debt（ag-8128ba S13 实证）；锁等待
+        // 亚秒级，一次重试即可消除。超时（SIGKILL）不重试（10s×2 已足够异常）。
+        const once = (retry) => {
+          execFile("git", args, { maxBuffer: 32 * 1024 * 1024, timeout: 10_000, killSignal: "SIGKILL" }, (err, stdout) => {
+            if (err && (err.signal === "SIGKILL" || err.killed)) dbg(args[0] === "-C" ? args[1] : null, `git timeout ${args.slice(0, 3).join(" ")}`);
+            if (err && retry && !(err.signal === "SIGKILL" || err.killed)) {
+              setTimeout(() => once(false), 400);
+              return;
+            }
+            resolve(err ? null : String(stdout ?? ""));
+          });
+        };
+        once(true);
       });
 
     // 同形字符折叠（ag-8128ba S4 实证）：模型偶发把路径中的拉丁字母发成西里尔/希腊同形字符

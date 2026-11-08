@@ -450,7 +450,10 @@ s13() {
   tui_send $S "用写文件工具分别创建 .omo/plan/todo.md 和 .review-loop/notes/x.md 两个文件，各写一行文字即可。不要编辑其他任何文件，不要提交，不要运行 /review-loop。"
   DBG="$R/.review-loop/plugin-debug.log"
   wait_log "$DBG" "gate=edits BLOCK" 300 || log "  ⚠ S13 phase1 未捕获 gate=edits BLOCK（可能 idle 未触发，查 TUI）"
-  assert "S13a 仅 .omo/.review-loop 编辑被闸（isOmoPath 过滤→零产品编辑）" grep -aq "gate=edits BLOCK" "$DBG"
+  # S13a 接受任一零欠债 BLOCK 行（ag-8128ba 实证：模型会把双文件写入委派给子代理/路径回显
+  # 噪音→phase1 不总落在 edits 门——worktree(no debt)/cwd-fallback 同为审慎零欠债裁决；
+  # 契约（零注入）由 S13b/S13e 把关，本断言只钉「评估发生且审慎 BLOCK」）
+  assert "S13a 仅 .omo/.review-loop 编辑被闸（isOmoPath 过滤→零产品编辑）" bash -c "grep -aqE 'gate=(edits|worktree|cwd-fallback) BLOCK' $DBG 2>/dev/null"
   assert "S13b phase1 零注入" bash -c "! grep -aq 'injected OK' $DBG 2>/dev/null"
   # phase2（fix 回归，2026-10-08 误投形态）：task 派只读子代理 → delegator 过 gate=edits（delegators.has），
   # 但自身+子会话仍零产品编辑 → cwd 回退资格门须 BLOCK。真 TUI 驱动 task()（同 S8/S9 派发约定；
