@@ -1,0 +1,29 @@
+#!/bin/sh
+# req-check v1 - requirements discipline gate: docs/reqs/scratch.md + code Req: tags.
+set -u
+scratch="docs/reqs/scratch.md"
+[ -f "$scratch" ] || { echo "req-check: no $scratch - nothing to check"; exit 0; }
+entries=$(awk -F'|' 'NF>=5 && $1 !~ /^[[:space:]]*#/ {
+  id=$1; tf=$4; st=$5
+  gsub(/^[[:space:]]+|[[:space:]]+$/,"",id); gsub(/^[[:space:]]+|[[:space:]]+$/,"",tf); gsub(/^[[:space:]]+|[[:space:]]+$/,"",st)
+  print id "\t" tf "\t" st }' "$scratch")
+if git rev-parse --is-inside-work-tree >/dev/null 2>&1; then
+  tags=$(git grep --untracked -hoE 'Req: [A-Za-z0-9][A-Za-z0-9/_-]*' -- . ':!docs/reqs' 2>/dev/null | sed 's/^Req: //' | sort -u)
+else
+  tags=$(grep -rhoE --exclude-dir=.git --exclude-dir=reqs 'Req: [A-Za-z0-9][A-Za-z0-9/_-]*' . 2>/dev/null | sed 's/^Req: //' | sort -u)
+fi
+dangling=""; orphan=""; notest=""
+for t in $tags; do
+  st=$(printf '%s\n' "$entries" | awk -F'\t' -v i="$t" '$1==i{print $3}')
+  if [ -z "$st" ] || [ "$st" = "dropped" ]; then dangling="$dangling $t"; fi
+done
+for id in $(printf '%s\n' "$entries" | awk -F'\t' '$3=="active"{print $1}'); do
+  printf '%s\n' "$tags" | grep -qxF "$id" || orphan="$orphan $id"
+  tf=$(printf '%s\n' "$entries" | awk -F'\t' -v i="$id" '$1==i{print $2}')
+  if [ -z "$tf" ] || [ "$tf" = "-" ]; then notest="$notest $id"; fi
+done
+rc=0
+echo "[code-dangling]${dangling:+$dangling}"; [ -n "$dangling" ] && rc=1
+echo "[orphan-def]${orphan:+$orphan}"; [ -n "$orphan" ] && rc=1
+echo "[no-test]${notest:+$notest}"; [ -n "$notest" ] && rc=1
+exit $rc

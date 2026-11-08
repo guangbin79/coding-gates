@@ -1,0 +1,14 @@
+#!/usr/bin/env bash
+# review-loop 完成信号：commit 即「有未评审工作」（2026-09-27 信号重设计）
+# 2026-09-27 scope handoff：flag 内容 = 首个未评审提交的 HEAD（保留首值 = range 起点）
+# 消费方：mounts/opencode/plugin/review-loop-trigger.ts gate=worktree（session.idle 时读，注入成功后删除 flag）
+# 激活：install.sh enroll <repo>（每仓一次；.review-loop/ 须在 .gitignore）
+root="$(git rev-parse --show-toplevel 2>/dev/null)" || exit 0
+f="$root/.review-loop/.commit-flag"
+mkdir -p "$root/.review-loop"
+# 2026-09-28 scope attribution：flag 次行 origin: <session-id|external> 记录来源（跨会话 scope 归属用）
+[ -f "$f" ] || {
+  v="${REVIEW_LOOP_WRAP_ID:-$(env | grep -iE '^OPENCODE.*SESSION' | head -1 | cut -d= -f2)}" # 2026-10-06 headless lane：包装器 WRAP_ID 优先（确定性），后备原 grep（external 回退保留）
+  { git rev-parse HEAD; echo "origin: ${v:-external}"; } > "$f"
+}
+exit 0
