@@ -77,7 +77,7 @@ s1() {
   local R=/tmp/rl-e2e-s1 S=rls1 DBG
   log "=== S1 commit-then-idle（主杀场景）==="
   mkrepo "$R" s1
-  tmux kill-session -t $S 2>/dev/null; tmux new-session -d -s $S -x 220 -y 50 "cd $R && MEMORY_PLUGIN_AUTOSTART=0 REVIEW_LOOP_DEBUG=1 REVIEW_LOOP_IDLE_MIN_S=5 opencode --standalone"
+  tmux kill-session -t $S 2>/dev/null; tmux new-session -d -s $S -x 220 -y 50 "cd $R && MEMORY_PLUGIN_AUTOSTART=0 REVIEW_LOOP_DEBUG=1 REVIEW_LOOP_IDLE_MIN_S=5 XDG_CONFIG_HOME="$RL_CFGROOT" opencode --standalone"
   sleep 15
   tui_send $S "把 hello.ts 里的函数名 hello 改成 greet，改完用 git commit -m rename 提交。在收到自动评审提醒之前，不要自己运行 /review-loop；收到提醒后，按提醒内容执行评审。"
   DBG="$R/.review-loop/plugin-debug.log"
@@ -123,7 +123,7 @@ s2() {
   local P=$H/projects/proj S=rls2 DBG
   log "=== S2 非仓 cwd + 嵌套仓编辑（B 修复）==="
   rm -rf "$H"; mkdir -p "$H/projects"; mkrepo "$P" s2
-  tmux kill-session -t $S 2>/dev/null; tmux new-session -d -s $S -x 220 -y 50 "cd $H && MEMORY_PLUGIN_AUTOSTART=0 REVIEW_LOOP_DEBUG=1 REVIEW_LOOP_IDLE_MIN_S=5 opencode --standalone"
+  tmux kill-session -t $S 2>/dev/null; tmux new-session -d -s $S -x 220 -y 50 "cd $H && MEMORY_PLUGIN_AUTOSTART=0 REVIEW_LOOP_DEBUG=1 REVIEW_LOOP_IDLE_MIN_S=5 XDG_CONFIG_HOME="$RL_CFGROOT" opencode --standalone"
   sleep 15
   tui_send $S "把 projects/proj/hello.ts 里的函数名 hello 改成 greet，改完在 projects/proj 里 git commit -m rename 提交。不要自己运行 /review-loop。"
   DBG="$H/.review-loop/plugin-debug.log" # debug 锚定会话目录（非仓也可写）
@@ -142,7 +142,7 @@ s3() {
   local R=/tmp/rl-e2e-s3 S=rls3 DBG
   log "=== S3 零工作 idle（负例）==="
   mkrepo "$R" s3
-  tmux kill-session -t $S 2>/dev/null; tmux new-session -d -s $S -x 220 -y 50 "cd $R && MEMORY_PLUGIN_AUTOSTART=0 REVIEW_LOOP_DEBUG=1 REVIEW_LOOP_IDLE_MIN_S=5 opencode --standalone"
+  tmux kill-session -t $S 2>/dev/null; tmux new-session -d -s $S -x 220 -y 50 "cd $R && MEMORY_PLUGIN_AUTOSTART=0 REVIEW_LOOP_DEBUG=1 REVIEW_LOOP_IDLE_MIN_S=5 XDG_CONFIG_HOME="$RL_CFGROOT" opencode --standalone"
   sleep 15
   tui_send $S "只列出当前目录的文件名，不要编辑任何文件。"
   DBG="$R/.review-loop/plugin-debug.log"
@@ -156,7 +156,7 @@ s4() {
   local R=/tmp/rl-e2e-s4 S=rls4 DBG
   log "=== S4 纯 .omo 噪声（负例，D2 语义保持）==="
   mkrepo "$R" s4
-  tmux kill-session -t $S 2>/dev/null; tmux new-session -d -s $S -x 220 -y 50 "cd $R && MEMORY_PLUGIN_AUTOSTART=0 REVIEW_LOOP_DEBUG=1 REVIEW_LOOP_IDLE_MIN_S=5 opencode --standalone"
+  tmux kill-session -t $S 2>/dev/null; tmux new-session -d -s $S -x 220 -y 50 "cd $R && MEMORY_PLUGIN_AUTOSTART=0 REVIEW_LOOP_DEBUG=1 REVIEW_LOOP_IDLE_MIN_S=5 XDG_CONFIG_HOME="$RL_CFGROOT" opencode --standalone"
   sleep 15
   tui_send $S "把一行文字 hello 写进 .omo/notes/x.md 文件（用写文件工具），不要动其他文件。"
   DBG="$R/.review-loop/plugin-debug.log"
@@ -170,7 +170,7 @@ s16() {
   local R=/tmp/rl-e2e-s16 S=rls16 DBG
   log "=== S16 纯 .agent-experiences 噪声（负例，S4 语义同级扩展 gt-12c3）==="
   mkrepo "$R" s16
-  tmux kill-session -t $S 2>/dev/null; tmux new-session -d -s $S -x 220 -y 50 "cd $R && MEMORY_PLUGIN_AUTOSTART=0 REVIEW_LOOP_DEBUG=1 REVIEW_LOOP_IDLE_MIN_S=5 opencode --standalone"
+  tmux kill-session -t $S 2>/dev/null; tmux new-session -d -s $S -x 220 -y 50 "cd $R && MEMORY_PLUGIN_AUTOSTART=0 REVIEW_LOOP_DEBUG=1 REVIEW_LOOP_IDLE_MIN_S=5 XDG_CONFIG_HOME="$RL_CFGROOT" opencode --standalone"
   sleep 15
   tui_send $S "把一行文字 hello 写进 .agent-experiences/experiences/x.md 文件（用写文件工具），不要动其他文件。"
   DBG="$R/.review-loop/plugin-debug.log"
@@ -187,7 +187,7 @@ s6() {
   # bash 直写残留脏文件：不经会话编辑工具 → 归属须落 residue(review-only)，评审环不得改动
   printf 'export function leftover() { const unusedVar = 1; return 2; }\n' > "$R/leftover.ts"
   SHA=$(sha256sum "$R/leftover.ts" | cut -d" " -f1)
-  tmux kill-session -t $S 2>/dev/null; tmux new-session -d -s $S -x 220 -y 50 "cd $R && MEMORY_PLUGIN_AUTOSTART=0 REVIEW_LOOP_DEBUG=1 REVIEW_LOOP_IDLE_MIN_S=5 opencode --standalone"
+  tmux kill-session -t $S 2>/dev/null; tmux new-session -d -s $S -x 220 -y 50 "cd $R && MEMORY_PLUGIN_AUTOSTART=0 REVIEW_LOOP_DEBUG=1 REVIEW_LOOP_IDLE_MIN_S=5 XDG_CONFIG_HOME="$RL_CFGROOT" opencode --standalone"
   sleep 15
   tui_send $S "把 hello.ts 里的函数名 hello 改成 greet，只改这一个文件并提交它（git commit），不要动 leftover.ts、不要提交 leftover.ts。在收到自动评审提醒之前，不要自己运行 /review-loop；收到提醒后，按提醒内容执行评审。"
   DBG="$R/.review-loop/plugin-debug.log"
@@ -215,7 +215,7 @@ s7() {
   mkrepo "$R" s7a
   mkdir -p "$R/.review-loop"
   { git -C "$R" rev-parse HEAD; echo "origin: external"; } > "$R/.review-loop/.commit-flag"
-  tmux kill-session -t $S 2>/dev/null; tmux new-session -d -s $S -x 220 -y 50 "cd $R && MEMORY_PLUGIN_AUTOSTART=0 REVIEW_LOOP_DEBUG=1 REVIEW_LOOP_IDLE_MIN_S=5 opencode --standalone"
+  tmux kill-session -t $S 2>/dev/null; tmux new-session -d -s $S -x 220 -y 50 "cd $R && MEMORY_PLUGIN_AUTOSTART=0 REVIEW_LOOP_DEBUG=1 REVIEW_LOOP_IDLE_MIN_S=5 XDG_CONFIG_HOME="$RL_CFGROOT" opencode --standalone"
   sleep 15
   tui_send $S "把 hello.ts 里的函数名 hello 改成 greet，不要提交，不要自己运行 /review-loop。"
   DBG="$R/.review-loop/plugin-debug.log"
@@ -236,7 +236,7 @@ s7() {
   mkrepo "$R2" s7b
   mkdir -p "$R2/.review-loop"
   git -C "$R2" rev-parse HEAD > "$R2/.review-loop/.commit-flag"
-  tmux kill-session -t $S2 2>/dev/null; tmux new-session -d -s $S2 -x 220 -y 50 "cd $R2 && MEMORY_PLUGIN_AUTOSTART=0 REVIEW_LOOP_DEBUG=1 REVIEW_LOOP_IDLE_MIN_S=5 opencode --standalone"
+  tmux kill-session -t $S2 2>/dev/null; tmux new-session -d -s $S2 -x 220 -y 50 "cd $R2 && MEMORY_PLUGIN_AUTOSTART=0 REVIEW_LOOP_DEBUG=1 REVIEW_LOOP_IDLE_MIN_S=5 XDG_CONFIG_HOME="$RL_CFGROOT" opencode --standalone"
   sleep 15
   tui_send $S2 "把 hello.ts 里的函数名 hello 改成 greet，不要提交，不要自己运行 /review-loop。"
   DBG2="$R2/.review-loop/plugin-debug.log"
@@ -252,7 +252,7 @@ s8() {
   P=$H/projects/proj
   log "=== S8 非仓 cwd + task 子会话直编嵌套仓（delegated roots）==="
   rm -rf "$H"; mkdir -p "$H/projects"; mkrepo "$P" s8
-  tmux kill-session -t $S 2>/dev/null; tmux new-session -d -s $S -x 220 -y 50 "cd $H && MEMORY_PLUGIN_AUTOSTART=0 REVIEW_LOOP_DEBUG=1 REVIEW_LOOP_IDLE_MIN_S=5 opencode --standalone"
+  tmux kill-session -t $S 2>/dev/null; tmux new-session -d -s $S -x 220 -y 50 "cd $H && MEMORY_PLUGIN_AUTOSTART=0 REVIEW_LOOP_DEBUG=1 REVIEW_LOOP_IDLE_MIN_S=5 XDG_CONFIG_HOME="$RL_CFGROOT" opencode --standalone"
   sleep 15
   tui_send $S "用 task 工具同步派发一个 general 子代理（禁止 run_in_background，等子代理做完再继续）：让子代理把 $P/hello.ts 里的函数名 hello 改成 greet，再用写文件工具创建 $P/notes.md 内容为一行 child note，然后只在 $P 里 git add hello.ts 并 git commit -m rename，notes.md 必须保持未提交。你自己不要编辑任何文件，也不要自己运行 /review-loop。"
   DBG="$H/.review-loop/plugin-debug.log" # debug 锚定会话目录（非仓也可写，同 S2）
@@ -282,7 +282,7 @@ s9() {
   P=$H/projects/proj; W=$P-wt
   log "=== S9 同 S8 但子会话在 linked worktree 内工作且不清理（flag 存活至消费）==="
   rm -rf "$H"; mkdir -p "$H/projects"; mkrepo "$P" s9 # 主仓+worktree 两路径同在 $H 下，rm -rf 一次覆盖跨运行清理
-  tmux kill-session -t $S 2>/dev/null; tmux new-session -d -s $S -x 220 -y 50 "cd $H && MEMORY_PLUGIN_AUTOSTART=0 REVIEW_LOOP_DEBUG=1 REVIEW_LOOP_IDLE_MIN_S=5 opencode --standalone"
+  tmux kill-session -t $S 2>/dev/null; tmux new-session -d -s $S -x 220 -y 50 "cd $H && MEMORY_PLUGIN_AUTOSTART=0 REVIEW_LOOP_DEBUG=1 REVIEW_LOOP_IDLE_MIN_S=5 XDG_CONFIG_HOME="$RL_CFGROOT" opencode --standalone"
   sleep 15
   tui_send $S "用 task 工具同步派发一个 general 子代理（禁止 run_in_background，等子代理做完再继续）：让子代理先在 $P 里执行 git worktree add $W -b wt-e2e-s9 建 linked worktree，然后把 $W/hello.ts 里的函数名 hello 改成 greet，再用写文件工具创建 $W/notes.md 内容为一行 child note，然后只在 $W 里 git add hello.ts 并 git commit -m rename，notes.md 保持未提交，不要执行 git worktree remove（worktree 必须保持存活）。你自己不要编辑任何文件，也不要自己运行 /review-loop。"
   DBG="$H/.review-loop/plugin-debug.log"
@@ -320,10 +320,10 @@ s10() {
   printf '.omo/\n.review-loop/\n' > .gitignore
   printf 'export function hello() { return 1; }\n' > hello.ts
   git add .gitignore hello.ts; git commit -qm "init s10"
-  LIVE_PLUGIN="$HOME/.config/opencode/plugins/review-loop-trigger.ts" # 与插件同法派生期望钩路径（2026-11-08 单级化锁步）：活插件 realpath 单级 dirname/hooks，缺目录回退 HOME 主仓
-  EXPECTED_HOOKS="$(dirname "$(readlink -f "$LIVE_PLUGIN" 2>/dev/null || echo "$LIVE_PLUGIN")")/hooks"
+  LOADED_PLUGIN="$RLCFG/plugins/review-loop-trigger.ts" # 与插件同法派生期望钩路径（2026-11-08 单级化锁步；ag-8128ba 改锚沙箱被测插件＝ensureHooks 实际加载源）：realpath 单级 dirname/hooks，缺目录回退 HOME 主仓
+  EXPECTED_HOOKS="$(dirname "$(readlink -f "$LOADED_PLUGIN" 2>/dev/null || echo "$LOADED_PLUGIN")")/hooks"
   [ -d "$EXPECTED_HOOKS" ] || EXPECTED_HOOKS="$HOME/.dotfiles/.agent/review-loop/hooks" # 派生根缺 hooks（dotfiles 旧布局）→插件 ensureHooks 同款兜底
-  tmux kill-session -t $S 2>/dev/null; tmux new-session -d -s $S -x 220 -y 50 "cd $R && MEMORY_PLUGIN_AUTOSTART=0 REVIEW_LOOP_DEBUG=1 REVIEW_LOOP_IDLE_MIN_S=5 opencode --standalone"
+  tmux kill-session -t $S 2>/dev/null; tmux new-session -d -s $S -x 220 -y 50 "cd $R && MEMORY_PLUGIN_AUTOSTART=0 REVIEW_LOOP_DEBUG=1 REVIEW_LOOP_IDLE_MIN_S=5 XDG_CONFIG_HOME="$RL_CFGROOT" opencode --standalone"
   sleep 15
   tui_send $S "把 hello.ts 里的函数名 hello 改成 greet，改完用 git commit -m rename 提交。不要自己运行 /review-loop。"
   DBG="$R/.review-loop/plugin-debug.log" # cwd 即仓根，同 S1 锚法
@@ -353,7 +353,7 @@ s11() {
   local R=/tmp/rl-e2e-s11 S=rls11 DBG AN i c
   log "=== S11 水平触发：冷却过期+新欠债 → 二次注入 ==="
   mkrepo "$R" s11
-  tmux kill-session -t $S 2>/dev/null; tmux new-session -d -s $S -x 220 -y 50 "cd $R && MEMORY_PLUGIN_AUTOSTART=0 REVIEW_LOOP_DEBUG=1 REVIEW_LOOP_COOLDOWN_S=10 REVIEW_LOOP_IDLE_MIN_S=5 opencode --standalone"
+  tmux kill-session -t $S 2>/dev/null; tmux new-session -d -s $S -x 220 -y 50 "cd $R && MEMORY_PLUGIN_AUTOSTART=0 REVIEW_LOOP_DEBUG=1 REVIEW_LOOP_COOLDOWN_S=10 REVIEW_LOOP_IDLE_MIN_S=5 XDG_CONFIG_HOME="$RL_CFGROOT" opencode --standalone"
   sleep 15
   tui_send $S "把 hello.ts 里的函数名 hello 改成 greet，改完用 git commit -m rename 提交。在收到自动评审提醒之前，不要自己运行 /review-loop；收到提醒后，按提醒内容执行评审。"
   DBG="$R/.review-loop/plugin-debug.log"
@@ -391,7 +391,7 @@ s12() {
   git -C "$R" commit -q --allow-empty -m "unreviewed baseline work"
   rm -f "$R/.review-loop/.commit-flag" # 清旗标须在造债提交之后：post-commit 钩子会重建 flag，先删无效（ocr high）
   DBG="$R/.review-loop/plugin-debug.log" # A/B 同仓 cwd → 共享 debug 日志，按 claimed-by=sid 与注入计数区分
-  tmux kill-session -t $SA 2>/dev/null; tmux new-session -d -s $SA -x 220 -y 50 "cd $R && MEMORY_PLUGIN_AUTOSTART=0 REVIEW_LOOP_DEBUG=1 REVIEW_LOOP_COOLDOWN_S=10 REVIEW_LOOP_IDLE_MIN_S=5 opencode --standalone"
+  tmux kill-session -t $SA 2>/dev/null; tmux new-session -d -s $SA -x 220 -y 50 "cd $R && MEMORY_PLUGIN_AUTOSTART=0 REVIEW_LOOP_DEBUG=1 REVIEW_LOOP_COOLDOWN_S=10 REVIEW_LOOP_IDLE_MIN_S=5 XDG_CONFIG_HOME="$RL_CFGROOT" opencode --standalone"
   sleep 15
   tui_send $SA "把 hello.ts 里的函数名 hello 改成 greet，不要提交任何文件。在收到自动评审提醒之前，不要自己运行 /review-loop；收到提醒后也不要执行评审，直接执行 git checkout hello.ts 撤销刚才的修改，然后回复 ok 两个字母。"
   if ! wait_log "$DBG" "injected OK" $WAIT; then
@@ -407,7 +407,7 @@ s12() {
   # A 回落静：无新编辑即无新欠债（2026-10-17 时间轴——A 冷却过期也不会再注入）——短 settle 即可
   sleep 20
   # B：第二实例同仓 idle → 他人新鲜认领 → claim-skip 零注入
-  tmux kill-session -t $SB 2>/dev/null; tmux new-session -d -s $SB -x 220 -y 50 "cd $R && MEMORY_PLUGIN_AUTOSTART=0 REVIEW_LOOP_DEBUG=1 REVIEW_LOOP_IDLE_MIN_S=5 opencode --standalone"
+  tmux kill-session -t $SB 2>/dev/null; tmux new-session -d -s $SB -x 220 -y 50 "cd $R && MEMORY_PLUGIN_AUTOSTART=0 REVIEW_LOOP_DEBUG=1 REVIEW_LOOP_IDLE_MIN_S=5 XDG_CONFIG_HOME="$RL_CFGROOT" opencode --standalone"
   sleep 15
   tui_send $SB "把 hello.ts 里的函数名 hello 改成 welcome，只改这一个文件，不要提交，不要自己运行 /review-loop，改完直接回复 ok。"
   if ! wait_log "$DBG" "claim-skip" $WAIT; then
@@ -441,7 +441,7 @@ s13() {
   mkdir -p "$R/.review-loop"
   { git -C "$R" rev-parse HEAD; echo "origin: external"; } > "$R/.review-loop/.commit-flag"
   printf 'export function leftover() { return 9; }\n' > "$R/leftover.ts"
-  tmux kill-session -t $S 2>/dev/null; tmux new-session -d -s $S -x 220 -y 50 "cd $R && MEMORY_PLUGIN_AUTOSTART=0 REVIEW_LOOP_DEBUG=1 REVIEW_LOOP_IDLE_MIN_S=5 opencode --standalone"
+  tmux kill-session -t $S 2>/dev/null; tmux new-session -d -s $S -x 220 -y 50 "cd $R && MEMORY_PLUGIN_AUTOSTART=0 REVIEW_LOOP_DEBUG=1 REVIEW_LOOP_IDLE_MIN_S=5 XDG_CONFIG_HOME="$RL_CFGROOT" opencode --standalone"
   sleep 15
   # phase1：仅 .omo/.review-loop 写入 → isOmoPath 过滤 → 零产品编辑 → 既有 gate=edits BLOCK（回归保护）
   tui_send $S "用写文件工具分别创建 .omo/plan/todo.md 和 .review-loop/notes/x.md 两个文件，各写一行文字即可。不要编辑其他任何文件，不要提交，不要运行 /review-loop。"
@@ -471,7 +471,7 @@ s15() {
   mkdir -p "$R/.review-loop"
   { echo "$ORPHAN"; echo "origin: external"; } > "$R/.review-loop/.commit-flag"
   DBG="$R/.review-loop/plugin-debug.log"
-  tmux kill-session -t $S 2>/dev/null; tmux new-session -d -s $S -x 220 -y 50 "cd $R && MEMORY_PLUGIN_AUTOSTART=0 REVIEW_LOOP_DEBUG=1 REVIEW_LOOP_IDLE_MIN_S=5 opencode --standalone"
+  tmux kill-session -t $S 2>/dev/null; tmux new-session -d -s $S -x 220 -y 50 "cd $R && MEMORY_PLUGIN_AUTOSTART=0 REVIEW_LOOP_DEBUG=1 REVIEW_LOOP_IDLE_MIN_S=5 XDG_CONFIG_HOME="$RL_CFGROOT" opencode --standalone"
   sleep 15
   tui_send $S "把 hello.ts 里的函数名 hello 改成 greet，只改这一个文件，不要提交，不要自己运行 /review-loop；收到自动评审提醒后按提醒内容执行评审即可。"
   if ! wait_log "$DBG" "injected OK" $WAIT; then
@@ -497,7 +497,7 @@ s14() {
   mkrepo "$R" s14
   mkdir -p "$R/.omo"
   printf '{"works":{"w1":{"status":"active"}}}' > "$R/.omo/boulder.json"
-  tmux kill-session -t $S 2>/dev/null; tmux new-session -d -s $S -x 220 -y 50 "cd $R && MEMORY_PLUGIN_AUTOSTART=0 REVIEW_LOOP_DEBUG=1 REVIEW_LOOP_IDLE_MIN_S=5 opencode --standalone"
+  tmux kill-session -t $S 2>/dev/null; tmux new-session -d -s $S -x 220 -y 50 "cd $R && MEMORY_PLUGIN_AUTOSTART=0 REVIEW_LOOP_DEBUG=1 REVIEW_LOOP_IDLE_MIN_S=5 XDG_CONFIG_HOME="$RL_CFGROOT" opencode --standalone"
   sleep 15
   tui_send $S "用编辑工具（edit 或 write）把 hello.ts 里的函数名 hello 改成 greet，只改这一个文件，禁止用 bash/sed 改文件，改完提交它（git commit），不要自己运行 /review-loop，提交完直接回复 ok。"
   DBG="$R/.review-loop/plugin-debug.log"
@@ -525,8 +525,33 @@ s14() {
 # stub 两模式：消息含 /review-loop → 评审模式（prompt 落盘+可控 sleep/退码）；否则工作模式（真实 git commit 落真实旗标）
 WRAP="$(cd "$(dirname "$(readlink -f "${BASH_SOURCE[0]}")")" && pwd)/../run-with-review.sh"
 WSTUBBIN="$(mktemp -d)/stubbin" # 逐跑唯一：固定 /tmp 路径可被多用户主机预植入 stub 劫持（2026-11-08 评审 C1）
-trap 'rm -rf "$(dirname "$WSTUBBIN")"' EXIT # 逐跑唯一伴随逐跑回收：stub 目录无调试价值，防 /tmp 累积（2026-11-08 ocr 轮2）
+trap 'rm -rf "$(dirname "$WSTUBBIN")" "$RL_CFGROOT"' EXIT # 逐跑唯一伴随逐跑回收：stub 目录无调试价值，防 /tmp 累积（2026-11-08 ocr 轮2）；连带沙箱 config 根
 WENV=()
+
+# ── 场景 serve 配置隔离（ag-8128ba 根因修复）──
+# 全局 ~/.config/opencode 携带 agora MCP／superpowers 等，诱导夹具 agent 把场景工作委派给
+# agora 子任务（worktree merge 回夹具仓→夹具状态污染，live 首跑 19/61 红的共同根因）。
+# 沙箱＝逐跑 mktemp config 根，XDG_CONFIG_HOME 只指给场景会话（`opencode debug paths` 实证
+# v2.2.6 遵守；⚠ opencode 自行追加 /opencode——env 必须指 $RL_CFGROOT 父目录，指 $RLCFG
+# 会解析到 <root>/opencode/opencode 空目录＝零 config→provider 落默认上游 401）；opencode.json＝全局副本剥 mcp+plugins（保 model/providers/agents 路由与
+# permissions allow-all；剥 npm plugins 防离线安装炸弹）；plugins/ 只挂被测插件（套件自定位
+# symlink，分支期测 worktree 码）＋open-code-review（注入评审步骤需 ocr_review 工具）；
+# command/ 挂 /review-loop（注入提示词要求 agent 执行评审）。node_modules symlink 供 ocr
+# 插件的 @opencode-ai/plugin bare import 解析（离线安全，零安装）。
+# ⚠ package.json 必须在场（内容任意，private 即可）：实证 v2.2.6 TUI 启动路径下，config 根
+# 无 package.json 时自定义 provider 的 settings.baseURL 不生效（请求落 zai 默认上游→401
+# token expired）；headless `opencode run` 不受影响。bisect 取证 2026-11-08。
+RL_SRC_CFG="${XDG_CONFIG_HOME:-$HOME/.config}/opencode/opencode.json"
+RL_CFGROOT="$(mktemp -d "${TMPDIR:-/tmp}/rl-e2e-cfg.XXXXXX")"
+RLCFG="$RL_CFGROOT/opencode"; mkdir -p "$RLCFG/plugins" "$RLCFG/command"
+if ! python3 -c 'import json,sys; c=json.load(open(sys.argv[1])); [c.pop(k,None) for k in ("mcp","plugins")]; json.dump(c,open(sys.argv[2],"w"),indent=2)' "$RL_SRC_CFG" "$RLCFG/opencode.json"; then
+  rm -rf "$RL_CFGROOT"; echo "e2e: 沙箱 config 生成失败（缺失或不可读: $RL_SRC_CFG）" >&2; exit 1
+fi
+printf '{"name":"rl-e2e-sandbox","private":true}\n' > "$RLCFG/package.json"
+ln -sfn "$HOOKSRC/../review-loop-trigger.ts" "$RLCFG/plugins/review-loop-trigger.ts"
+ln -sfn "$HOOKSRC/../command/review-loop.md" "$RLCFG/command/review-loop.md"
+[ -f "${XDG_CONFIG_HOME:-$HOME/.config}/opencode/plugins/open-code-review.ts" ] && ln -sfn "${XDG_CONFIG_HOME:-$HOME/.config}/opencode/plugins/open-code-review.ts" "$RLCFG/plugins/open-code-review.ts"
+[ -d "${XDG_CONFIG_HOME:-$HOME/.config}/opencode/node_modules" ] && ln -sfn "${XDG_CONFIG_HOME:-$HOME/.config}/opencode/node_modules" "$RLCFG/node_modules"
 
 mkwstub() { # $1=logdir — 建 stub opencode 与干净 logdir（幂等）
   rm -rf "$1"; mkdir -p "$WSTUBBIN" "$1"
@@ -683,6 +708,7 @@ w8() {
 
 
 log "review-loop 信号重设计 e2e — $TS（S1/S5 合并执行）"
+log "config 沙箱: $RLCFG（全局副本剥 mcp/plugins；场景 serve 不继承 agora 等 MCP 面）"
 for s in ${*:-S1 S2 S3 S4 S16 S6 S7 S8 S9 S10 S11 S12 S13 S14 S15 W1 W2 W3 W4 W5 W6 W7 W8}; do
   case "$s" in W*) "w${s#W}" ;; *) "s${s#S}" ;; esac
 done
