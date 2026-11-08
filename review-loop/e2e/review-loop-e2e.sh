@@ -522,7 +522,7 @@ s14() {
 # 复用 mkrepo（钩子拷贝自本工件 hooks/＝含 WRAP_ID 捕获的 post-commit）；
 # stub 两模式：消息含 /review-loop → 评审模式（prompt 落盘+可控 sleep/退码）；否则工作模式（真实 git commit 落真实旗标）
 WRAP="$(cd "$(dirname "$(readlink -f "${BASH_SOURCE[0]}")")" && pwd)/../run-with-review.sh"
-WSTUBBIN=/tmp/rl-e2e-w-stubbin
+WSTUBBIN="$(mktemp -d)/stubbin" # 逐跑唯一：固定 /tmp 路径可被多用户主机预植入 stub 劫持（2026-11-08 评审 C1）
 WENV=()
 
 mkwstub() { # $1=logdir — 建 stub opencode 与干净 logdir（幂等）

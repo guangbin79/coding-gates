@@ -53,11 +53,12 @@ import { homedir } from "node:os"
 import { dirname, join, resolve } from "node:path"
 import { fileURLToPath } from "node:url"
 
-// 工件自定位（D6 锁步）：插件文件 realpath 上两级 = 工件根（分支期=worktree，回并后=master）；
-// 注入提示词的模块指针随工件走，两相皆活；解析失败回退 master 字面量。
+// 工件自定位（D6 锁步，2026-11-08 提取改单级）：插件文件 realpath 上一级 = 工件根
+//（本仓布局 <repo>/review-loop/，module|hooks 与插件同级）；dotfiles 旧布局该派生仍 miss
+//（.agent/opencode/ 下无工件）→ existsSync 失败照走 HOME 主仓回退，live 行为不变。
 const artifactModule = (() => {
   try {
-    const derived = join(dirname(dirname(realpathSync(fileURLToPath(import.meta.url)))), "module/review-loop.md");
+    const derived = join(dirname(realpathSync(fileURLToPath(import.meta.url))), "module/review-loop.md");
     if (existsSync(derived)) return derived; // 派生根缺工件（live 指旧布局/他仓）→ 回退 HOME 主仓
   } catch {
     /* 派生失败同样回退 */
@@ -379,7 +380,7 @@ export default {
     // fire-and-forget，绝不阻塞或炸插件加载；catch 崩溃落 ~/.review-loop 回退。
     const ensureHooks = async () => {
       try {
-        let hooksDir = join(dirname(dirname(realpathSync(fileURLToPath(import.meta.url)))), "hooks");
+        let hooksDir = join(dirname(realpathSync(fileURLToPath(import.meta.url))), "hooks"); // 提取改单级：本仓与插件同级；旧布局 miss→下行回退兜底
         if (!existsSync(hooksDir)) hooksDir = join(homedir(), ".dotfiles/.agent/review-loop/hooks"); // 派生根缺 hooks → 回退 HOME 主仓
         const root = await repoRootOf(`${process.cwd()}/x`); // 补 /x：repoRootOf 按父段探仓
         if (!root) return; // 非仓 cwd 不动作（init 时无会话目录可落日志）

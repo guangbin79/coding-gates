@@ -7,7 +7,7 @@ COMMANDS_DIR="$HOME/.config/opencode/commands"
 
 cmd_install() {
   mkdir -p "$PLUGINS_DIR"
-  ln -sfn "$HOME/.dotfiles/.agent/opencode/plugins/review-loop-trigger.ts" "$PLUGINS_DIR/review-loop-trigger.ts"  # 裁定 2026-10-11：canonical mounts 源（钉主仓，worktree 会移除）
+  ln -sfn "$ROOT/review-loop-trigger.ts" "$PLUGINS_DIR/review-loop-trigger.ts"  # 2026-11-08 提取：源改本工件内（原钉 dotfiles，独立机器悬空）
   if [ -L "$COMMANDS_DIR" ]; then
     echo "skip command symlink: $COMMANDS_DIR is a shared directory symlink -> $(readlink "$COMMANDS_DIR")"
   else

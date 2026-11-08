@@ -22,7 +22,7 @@ link() {
   local dest="$1" src="$2" cur
   mkdir -p "$(dirname "$dest")"
   if [ -e "$dest" ] || [ -L "$dest" ]; then
-    cur="$(readlink -f "$dest")"
+    cur="$(readlink -f "$dest" 2>/dev/null || true)" # 全断链（父目录亦缺）readlink rc=1：set -e 下空串落 reject 分支照常引导
     case "$cur" in
       "$REPO"|"$REPO"/*) ;;
       *)
