@@ -31,7 +31,7 @@
 # v2.0.32 适配（2026-10-19）：TUI 默认连接常驻 background service，插件在 service 进程内执行，
 # 场景 env（DEBUG/IDLE_MIN_S/COOLDOWN_S）与磁盘插件代码均不可达——全部 S 启动行改
 # `opencode --standalone`（私有 server＝每场景独立 env＋新载插件代码，恢复 2.0.32 前隔离语义）
-# 用法: bash review-loop-e2e.sh S1 [S2 ...]   （默认全跑；RL_E2E_WAIT=<秒> 缩短失败场景等待上限，默认 480；产物 ~/.omo/evidence/review-loop/signal-e2e-<ts>.log）
+# 用法: bash review-loop-e2e.sh S1 [S2 ...]   （默认全跑；RL_E2E_WAIT=<秒> 缩短失败场景等待上限，默认 480；RL_E2E_EVIDENCE_WAIT/RL_E2E_ANCHOR_WAIT/RL_E2E_INJECT2_WAIT=<秒> 覆写评审速度窗口（证据 420/锚 120（S11b 锚窗随二次注入 300）/二次注入 300，慢链路宿主放大，缺省=现值零行为变化）；产物 ~/.omo/evidence/review-loop/signal-e2e-<ts>.log）
 set -u
 EVDIR="$HOME/.omo/evidence/review-loop"
 TS=$(date +%Y%m%d-%H%M%S)
@@ -40,6 +40,12 @@ HOOKSRC="${RL_E2E_HOOKSRC:-$(cd "$(dirname "$(readlink -f "${BASH_SOURCE[0]}")")
 PASS=0; FAIL=0
 WAIT="${RL_E2E_WAIT:-480}" # 快速失败开关：缩短原 480s 注入/闸门类等待（S3/S4/S13 闸门 300s 等次级等待仍固定）；默认 480 不变
 case "$WAIT" in ''|*[!0-9]*) WAIT=480 ;; esac; [ "$WAIT" -lt 5 ] && WAIT=5 # 非数字/过小回退：防 for((i<$WAIT/5)) 零迭代假超时
+EVIDENCE_WAIT="${RL_E2E_EVIDENCE_WAIT:-420}" # S1f/S6 评审证据产出等待（慢链路宿主按评审速度放大，ag-272b49）
+ANCHOR_WAIT="${RL_E2E_ANCHOR_WAIT:-120}"     # S1g .last-reviewed 锚落盘等待
+INJECT2_WAIT="${RL_E2E_INJECT2_WAIT:-300}"   # S11b/S11c/S12e 二次注入窗（窗内锚等待与二次注入同源；缩小此值会同步缩 S11b 锚窗——评审慢注入快的宿主慎缩小）
+case "$EVIDENCE_WAIT" in ''|*[!0-9]*) EVIDENCE_WAIT=420 ;; esac; EVIDENCE_WAIT=$((10#$EVIDENCE_WAIT)); [ "$EVIDENCE_WAIT" -lt 5 ] && EVIDENCE_WAIT=5; [ "$EVIDENCE_WAIT" -gt 86400 ] && EVIDENCE_WAIT=86400 # 10# 十进制归一杀前导零八进制歧义＋86400s 封顶防 >intmax 回绕近无限挂死（终闸 B1/B2/B3）；下限同 WAIT 防零迭代假超时
+case "$ANCHOR_WAIT" in ''|*[!0-9]*) ANCHOR_WAIT=120 ;; esac; ANCHOR_WAIT=$((10#$ANCHOR_WAIT)); [ "$ANCHOR_WAIT" -lt 5 ] && ANCHOR_WAIT=5; [ "$ANCHOR_WAIT" -gt 86400 ] && ANCHOR_WAIT=86400
+case "$INJECT2_WAIT" in ''|*[!0-9]*) INJECT2_WAIT=300 ;; esac; INJECT2_WAIT=$((10#$INJECT2_WAIT)); [ "$INJECT2_WAIT" -lt 5 ] && INJECT2_WAIT=5; [ "$INJECT2_WAIT" -gt 86400 ] && INJECT2_WAIT=86400
 mkdir -p "$EVDIR"
 
 log() { printf '%s\n' "$*" | tee -a "$LOG"; }
@@ -97,16 +103,16 @@ s1() {
   done
   assert "S5b flag 已转 claimed（消费即改名）" test $cl -eq 1
   log "  （等待注入后的评审环产出证据文件…）"
-  local i ev=0; for ((i=0; i<420/5; i++)); do
+  local i ev=0; for ((i=0; i<$EVIDENCE_WAIT/5; i++)); do
     ls $R/.review-loop/2026*.md >/dev/null 2>&1 && { ev=1; break; }
     sleep 5
   done
-  [ $ev -eq 1 ] && { log "  ✅ S1f 评审证据文件产出"; PASS=$((PASS+1)); } || log "  ⚠ 评审证据 420s 未出现（触发已验证，环执行另行观察）"
-  local i lr=0; for ((i=0; i<120/5; i++)); do
+  [ $ev -eq 1 ] && { log "  ✅ S1f 评审证据文件产出"; PASS=$((PASS+1)); } || log "  ⚠ 评审证据 ${EVIDENCE_WAIT}s 未出现（触发已验证，环执行另行观察）"
+  local i lr=0; for ((i=0; i<$ANCHOR_WAIT/5; i++)); do
     test -f $R/.review-loop/.last-reviewed && { lr=1; break; }
     sleep 5
   done
-  [ $lr -eq 1 ] && { log "  ✅ S1g .last-reviewed 落盘"; PASS=$((PASS+1)); } || { log "  ❌ S1g .last-reviewed 未在 120s 内落盘"; FAIL=$((FAIL+1)); }
+  [ $lr -eq 1 ] && { log "  ✅ S1g .last-reviewed 落盘"; PASS=$((PASS+1)); } || { log "  ❌ S1g .last-reviewed 未在 ${ANCHOR_WAIT}s 内落盘"; FAIL=$((FAIL+1)); }
   assert "S1h 证据含范围记法" bash -c "grep -aqE '\.\.(HEAD|[0-9a-f]{6,})' $R/.review-loop/2026*.md"
   # S5：同会话再 idle → 冷却封口（W2：marker=600s mtime 冷却而非永拒；评审环自身 idle 同样命中）
   tui_send $S "回复 done 两个字母即可"
@@ -200,14 +206,14 @@ s6() {
   assert "S6a scope 含 flag 范围（2026-10-17：欠债＝会话编辑，flag 仅范围携带者）" bash -c "grep -a 'gates PASS' '$DBG' | grep -aqE '[0-9a-f]{7,40}\\.\\.HEAD'"
   assert "S6b scope 含 residue(review-only): leftover.ts" grep -aq "residue(review-only): leftover.ts" "$DBG"
   log "  （等待注入后的评审环产出证据文件…）"
-  local i ev=0; for ((i=0; i<420/5; i++)); do
+  local i ev=0; for ((i=0; i<$EVIDENCE_WAIT/5; i++)); do
     ls $R/.review-loop/2026*.md >/dev/null 2>&1 && { ev=1; break; }
     sleep 5
   done
   if [ $ev -eq 1 ]; then
     assert "S6c leftover.ts 字节不变（residue 不被改）" bash -c "[ \"\$(sha256sum $R/leftover.ts | cut -d' ' -f1)\" = \"$SHA\" ]"
     assert "S6d 证据文本提及 residue（中英任一）" bash -c "grep -aqE 'residue|review-only|遗留' $R/.review-loop/2026*.md"
-  else log "  ⚠ S6 证据文件 420s 未出现，跳过行为断言"; FAIL=$((FAIL+1)); fi
+  else log "  ⚠ S6 证据文件 ${EVIDENCE_WAIT}s 未出现，跳过行为断言"; FAIL=$((FAIL+1)); fi
   tmux kill-session -t $S 2>/dev/null
 }
 
@@ -365,15 +371,15 @@ s11() {
   fi
   assert "S11a 首次注入恰 1 次" bash -c "[ \$(grep -ac 'injected OK' '$DBG') -eq 1 ]"
   # 等评审环落 .last-reviewed 锚（首轮评审完成，欠债清零）
-  AN=""; for ((i=0; i<300/5; i++)); do
+  AN=""; for ((i=0; i<$INJECT2_WAIT/5; i++)); do
     if [ -s "$R/.review-loop/.last-reviewed" ]; then AN=$(cat "$R/.review-loop/.last-reviewed"); [ ${#AN} -eq 40 ] && break; fi
     sleep 5
   done
-  [ ${#AN} -eq 40 ] && { log "  ✅ S11b .last-reviewed 锚落盘"; PASS=$((PASS+1)); } || { log "  ❌ S11b 锚未落盘（300s）"; FAIL=$((FAIL+1)); tmux kill-session -t $S 2>/dev/null; rm -rf "$R"; return; }
+  [ ${#AN} -eq 40 ] && { log "  ✅ S11b .last-reviewed 锚落盘"; PASS=$((PASS+1)); } || { log "  ❌ S11b 锚未落盘（${INJECT2_WAIT}s）"; FAIL=$((FAIL+1)); tmux kill-session -t $S 2>/dev/null; rm -rf "$R"; return; }
   # 冷却（10s）早已过期；制造新欠债：评审后新编辑（2026-10-17 欠债门时间轴化——空提交/外来提交不再构成会话欠债）
   tui_send $S "再用编辑工具把 hello.ts 里当前的函数名改成 howdy（无论它现在叫什么），只改这一个文件，禁止用 bash/sed 改文件，不要提交，改完直接回复 ok。"
-  c=0; for ((i=0; i<300/5; i++)); do
-    c=$(grep -ac 'injected OK' "$DBG" 2>/dev/null || true); [ "$c" -ge 2 ] && break
+  c=0; for ((i=0; i<$INJECT2_WAIT/5; i++)); do
+    c=$(grep -ac 'injected OK' "$DBG" 2>/dev/null || true); c=${c:-0}; [ "$c" -ge 2 ] && break # 空值守卫：DBG 缺失时 grep 无输出→[ 整数缺操作数逐轮刷屏（ag-272b49）
     sleep 5
   done
   assert "S11c 冷却过期后新欠债二次注入" bash -c "[ \$(grep -ac 'injected OK' '$DBG') -ge 2 ]"
@@ -421,7 +427,7 @@ s12() {
   assert "S12d B 零注入（sid 归因；A 冷却再注入不计）" bash -c "[ -n '$BSID' ] && ! grep -aq \"injected OK id=$BSID\" '$DBG'"
   # A 消费 flag：新编辑（欠债）+空提交造 flag → A idle 二次注入 → rename-claim 消费 → scope-claim 释放
   tui_send $SA "先用编辑工具把 hello.ts 里当前的函数名改成 greet（禁止用 bash/sed），保持不提交；再执行 git commit --allow-empty -m post-race 建一个空提交，然后回复 ok。不要自己运行 /review-loop；若再收到自动评审提醒也不要执行评审，回复 ok 即可。"
-  c=0; for ((i=0; i<300/5; i++)); do # 等消费工件而非注入计数：A 冷却再注入会虚增计数（ocr medium）
+  c=0; for ((i=0; i<$INJECT2_WAIT/5; i++)); do # 等消费工件而非注入计数：A 冷却再注入会虚增计数（ocr medium）
     ls "$R"/.review-loop/.commit-flag.claimed-* >/dev/null 2>&1 && { c=1; break; }
     sleep 5
   done
