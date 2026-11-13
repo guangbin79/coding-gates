@@ -600,29 +600,32 @@ export default {
             else dbg(dir, `flag-start orphan (not HEAD ancestor, amend/rebase?): root=${root} start=${f.start.slice(0, 8)} — range dropped`);
           }
           if (dirty) {
-            // T3②：脏文件二分。等价集（本会话[+直接子会话]的 editPaths 归一到本 root 仓相对）
-            // ∩ 本 root 脏文件 = session-edited / delegated(child-observed)；其余 = residue。
+            // T3②：脏文件二分（per-file 归因，S11 2026-11-13）：等价集（本会话[+直接子会话]的
+            // editPaths 归一到本 root 仓相对）∩ 本 root 脏文件——父会话自身记录的 = session-edited，
+            // 仅子会话记录的 = delegated(child-observed)（父子双录父胜，弃 delegators 会话级粘标）；
+            // 其余 = residue。
             // residue(review-only) 语义：未经会话 edit/write 工具观察到的改动——可能是 bash
             // 途径的本会话改动或他会话遗留：上报，未经用户确认归属不得修改（confirm-before-fix）。
             parts.push("dirty tree");
             const dirtyFiles = porcelainFiles(st);
             const dirtySet = new Set(dirtyFiles);
             const ownRel = new Set();
+            const ownDirect = new Set(); // 父会话自身 editPaths（id 恒 ∈ equivSids → ownRel ⊇ ownDirect）
+            for (const p of (editPaths.get(id) || []).keys()) {
+              const rel = relToRoot(p, root);
+              if (rel && dirtySet.has(rel)) ownDirect.add(rel);
+            }
             for (const sid of equivSids) {
               for (const p of (editPaths.get(sid) || []).keys()) { // Map 迭代产出 [k,v] 条目——必 .keys()，直迭代会把条目数组当路径（S8d/e 回归根因）
                 const rel = relToRoot(p, root);
                 if (rel && dirtySet.has(rel)) ownRel.add(rel);
               }
             }
-            const sessionEdited = dirtyFiles.filter((x) => ownRel.has(x));
+            const sessionEdited = dirtyFiles.filter((x) => ownDirect.has(x));
+            const delegatedOnly = dirtyFiles.filter((x) => ownRel.has(x) && !ownDirect.has(x));
             const residue = dirtyFiles.filter((x) => !ownRel.has(x));
-            if (sessionEdited.length) {
-              parts.push(
-                delegators.has(id)
-                  ? `delegated(child-observed, fix-authoritative): ${fmtFiles(sessionEdited)}`
-                  : `session-edited: ${fmtFiles(sessionEdited)}`,
-              );
-            }
+            if (sessionEdited.length) parts.push(`session-edited: ${fmtFiles(sessionEdited)}`);
+            if (delegatedOnly.length) parts.push(`delegated(child-observed, fix-authoritative): ${fmtFiles(delegatedOnly)}`);
             if (residue.length) parts.push(`residue(review-only): ${fmtFiles(residue)}`);
           }
           if (!parts.length) parts.push("session-edited since last review"); // 编辑已全部提交但无锚无旗标（钩子缺失且从未评审）
