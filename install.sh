@@ -1,12 +1,12 @@
 #!/usr/bin/env bash
-# install.sh — coding-gates 开发闸安装器：./install.sh req-gate | review-loop
-# 双目标以 symlink 部署插件/命令/CLI 进 ~/.config/opencode 与 ~/.local/bin。
+# install.sh — coding-gates 开发闸安装器：./install.sh req-gate | review-loop | goal-gate
+# 三目标以 symlink 部署插件/命令/CLI/skill 进 ~/.config/opencode 与 ~/.local/bin。
 # 守卫纪律：目标已存在且 readlink -f 后不指向本仓 → 拒绝覆盖 exit 1；
 # 指向本仓或不存在 → 幂等建链。
 set -euo pipefail
 
 usage() {
-  echo "usage: ./install.sh req-gate | review-loop" >&2
+  echo "usage: ./install.sh req-gate | review-loop | goal-gate" >&2
   exit 1
 }
 
@@ -15,6 +15,7 @@ usage() {
 REPO="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd -P)"
 PLUGINS="$HOME/.config/opencode/plugins"
 COMMANDS="$HOME/.config/opencode/commands"
+SKILLS="$HOME/.config/opencode/skills"
 BIN="$HOME/.local/bin"
 
 # link <链接落点> <仓内源>：守卫＋幂等建链
@@ -44,6 +45,9 @@ case "$1" in
     # hooks 不部署：插件启动自检 ensureHooks 幂等自动配 core.hooksPath
     link "$PLUGINS/review-loop-trigger.ts" "$REPO/review-loop/review-loop-trigger.ts"
     link "$COMMANDS/review-loop.md" "$REPO/review-loop/command/review-loop.md"
+    ;;
+  goal-gate)
+    link "$SKILLS/goal-gate" "$REPO/goal-gate/opencode"
     ;;
   *) usage ;;
 esac

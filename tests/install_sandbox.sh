@@ -1,6 +1,6 @@
 #!/usr/bin/env bash
 # install_sandbox.sh — install.sh 离线自测：沙箱 HOME=mktemp，
-# 断言双目标部署落点/幂等重跑/异源守卫，passed=N failed=M，FAIL 非零退出。
+# 断言三目标部署落点/幂等重跑/异源守卫，passed=N failed=M，FAIL 非零退出。
 set -u
 
 REPO="$(cd "$(dirname "${BASH_SOURCE[0]}")/.." && pwd -P)"
@@ -19,7 +19,8 @@ points_into_repo() {
 
 SBX="$(mktemp -d)"
 SBX2="$(mktemp -d)"
-trap 'rm -rf "$SBX" "$SBX2"' EXIT
+SBX3="$(mktemp -d)"
+trap 'rm -rf "$SBX" "$SBX2" "$SBX3"' EXIT
 
 # ---- 1. req-gate 沙箱部署：退出 0，三 symlink 存在且落在本仓 ----
 if HOME="$SBX" bash "$REPO/install.sh" req-gate >/dev/null 2>&1; then
@@ -77,6 +78,33 @@ if [ "$rc" -eq 1 ] && printf '%s\n' "$out" | grep -q '拒绝覆盖'; then
   pass
 else
   fail "review-loop 异源目标拒绝覆盖 (rc=$rc)"
+fi
+
+# ---- 5. goal-gate 同款三查（部署 1 symlink：skills 目录链）----
+if HOME="$SBX3" bash "$REPO/install.sh" goal-gate >/dev/null 2>&1; then
+  pass
+else
+  fail "goal-gate install 退出 0"
+fi
+if points_into_repo "$SBX3/.config/opencode/skills/goal-gate"; then
+  pass
+else
+  fail "goal-gate symlink 落在本仓: $SBX3/.config/opencode/skills/goal-gate"
+fi
+if HOME="$SBX3" bash "$REPO/install.sh" goal-gate >/dev/null 2>&1; then
+  pass
+else
+  fail "goal-gate 幂等重跑退出 0"
+fi
+# 异源目标用真目录（部署形态即目录链）：rm -rf 摘本仓链再落异源目录
+rm -rf "$SBX3/.config/opencode/skills/goal-gate"
+mkdir -p "$SBX3/.config/opencode/skills/goal-gate"
+echo foreign > "$SBX3/.config/opencode/skills/goal-gate/SKILL.md"
+out="$(HOME="$SBX3" bash "$REPO/install.sh" goal-gate 2>&1)"; rc=$?
+if [ "$rc" -eq 1 ] && printf '%s\n' "$out" | grep -q '拒绝覆盖'; then
+  pass
+else
+  fail "goal-gate 异源目标拒绝覆盖 (rc=$rc)"
 fi
 
 echo "passed=$passed failed=$failed"
