@@ -59,7 +59,7 @@ agent: build
 1. 提交范围＝本循环 scope 中 session-edited / delegated(child-observed) 类文件（知识库文件系本会话写入，随此范围入库）；residue 与 origin(report-only) 项**一律不碰、不入提交**。
 2. 当前分支非 main/master：`git add`（仅上述文件）→ `git commit` → `git push -u origin HEAD`（已有上游则直接 push）——**禁止合并主分支**。
 3. 当前分支即 main/master：直接提交并 push 主分支。
-4. 提交成功后向各被审根写 `.review-loop/.last-reviewed`＝新 HEAD。
+4. 提交成功后向各被审根写 `.review-loop/.last-reviewed`＝新 HEAD；并维护评审链根 `.review-loop/.review-base`——已存在则保持原值不动（增量评审链的覆盖起点），不存在则写入本轮评审起点 sha（首轮＝评审范围 merge-base 起点）。两文件共同构成验收锚：HEAD 证明「评审到最新提交」，链根证明「评审范围自任务起点起覆盖全量交付」。
 5. push 失败（无远端/凭证/网络）＝如实上报，不阻塞、不回滚本地提交。
 6. 提交信息遵循仓库惯例；`.review-loop/` 状态目录与证据文件永不入提交。
 
