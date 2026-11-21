@@ -1,12 +1,12 @@
 #!/usr/bin/env bash
-# install.sh — coding-gates 开发闸安装器：./install.sh req-gate | review-loop | goal-gate
-# 三目标以 symlink 部署插件/命令/CLI/skill 进 ~/.config/opencode 与 ~/.local/bin。
+# install.sh — coding-gates 开发闸安装器：./install.sh req-gate | review-loop | goal-gate | recall-check
+# 四目标以 symlink 部署插件/命令/CLI/skill 进 ~/.config/opencode 与 ~/.local/bin。
 # 守卫纪律：目标已存在且 readlink -f 后不指向本仓 → 拒绝覆盖 exit 1；
 # 指向本仓或不存在 → 幂等建链。
 set -euo pipefail
 
 usage() {
-  echo "usage: ./install.sh req-gate | review-loop | goal-gate" >&2
+  echo "usage: ./install.sh req-gate | review-loop | goal-gate | recall-check" >&2
   exit 1
 }
 
@@ -48,6 +48,9 @@ case "$1" in
     ;;
   goal-gate)
     link "$SKILLS/goal-gate" "$REPO/goal-gate/opencode"
+    ;;
+  recall-check)
+    link "$SKILLS/recall-check" "$REPO/recall-check/opencode"
     ;;
   *) usage ;;
 esac

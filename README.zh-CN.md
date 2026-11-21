@@ -30,6 +30,8 @@ cd coding-gates
 
 **goal-gate——目标资格审查门。** 作用于派发链之前：指挥会话收到要派发/委托的目标、或收到 issue 类未经对话塑形的外部目标时，先过三查——可达成（现场勘察环境包络定夺，禁凭记忆下判）、可验证（验收口径机械可判）、两层收口（目标→子目标→叶子任务三层树内收口，第 3 层以下是执行者解空间）。结构＝判据真源＋薄绑定：`goal-gate/module/goal-gate.md` 为 harness 无关的真源（绑定层引用、禁复制正文），`goal-gate/opencode/SKILL.md` 做本环境槽位绑定；issue-agent 经 PROTOCOL 引用判据真源。超限复杂度回给目标来源方（在场提问，或异步起草澄清/拆分供确认），不越权深拆。
 
+**recall-check——写后代码召回自查。** 写查同部件：经验捕获带代码指纹（写）、逻辑单元完成后以摘要+标识符查语义记忆防再踩（查）；判据真源 recall-check/module，opencode 绑定随 install.sh 部署。
+
 ## 部署落点
 
 | 闸 | symlink | 仓内源 |

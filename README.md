@@ -30,6 +30,8 @@ No args or a bad arg prints usage and exits non-zero. Guard discipline: a target
 
 **goal-gate — the goal qualification gate.** Runs before the dispatch chain: a commanding session about to dispatch, or a session receiving an issue-style unshaped external goal, passes three checks — achievable (survey the live environment envelope on the spot, never judge from memory), verifiable (mechanically decidable acceptance) and two-level closure (goal → sub-goal → leaf task inside a three-layer tree; below layer 3 is the executor's space). Structure is source of truth + thin binding: `goal-gate/module/goal-gate.md` holds the harness-agnostic criteria (bindings reference it, never copy), `goal-gate/opencode/SKILL.md` binds the slots to this environment, and the issue-agent references the criteria source via PROTOCOL. Over-limit complexity goes back to the goal source (in-band question, or async drafted clarification/split) — never force-split deeper.
 
+**recall-check — post-write code-recall self-check.** One component, two sides: experience captures carry a code fingerprint (write), and after each logical unit the agent queries semantic memory by summary + identifiers to avoid re-stepping known pits (check); criteria source in `recall-check/module`, the opencode binding deploys via install.sh.
+
 ## Deployment Targets
 
 | Gate | Symlink | Repo source |
