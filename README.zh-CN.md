@@ -24,7 +24,7 @@ cd coding-gates
 
 ## 三道质量闸
 
-**req-gate——进门闸。** `execute.before` 插件：阻断会话首个产品 edit/write，直到需求门记录落在 `<TMPDIR||/tmp>/opencode/req-gate/<sessionID>.md`（仓外落盘，不脏 worktree）。记录即先于代码写下的验收标准，三选一：`PASS(trivial)`（≤1 文件 ≤20 行）、`PASS`（可执行验收清单）或 `ESCALATE`。配套：`req-check` CLI（用 `docs/reqs/scratch.md` 条目交叉核对代码里的 `Req:` 标签）与 `/req-gate` 命令。
+**req-gate——进门闸。** `execute.before` 插件：阻断会话首个产品 edit/write，直到需求门记录落在 `<TMPDIR||/tmp>/opencode/req-gate/<sessionID>.md`（仓外落盘，不脏 worktree）。记录即先于代码写下的验收标准，三选一：`PASS(trivial)`（≤1 文件 ≤20 行）、`PASS`（可执行验收清单）或 `ESCALATE`。`PASS` 全式收口前含零共享批评步（2026-11-21）：先拟 2–3 行方案段，经语义召回相似事故线索后由批评子代理挑战清单与方案（恰好一轮，critical 必修），结论落 `CRITIC: PASS/REVISED/SKIPPED` 行。配套：`req-check` CLI（用 `docs/reqs/scratch.md` 条目交叉核对代码里的 `Req:` 标签）与 `/req-gate` 命令。
 
 **review-loop——出门评审环。** 完成插件：会话在上次评审后又动了产品代码，下次空闲即注入提示驱动 agent 跑 `/review-loop`——判定→评审→修复→绿门禁→复审→上报。启动时 `ensureHooks` 幂等配置 `core.hooksPath`（仅在未设置时），不部署钩子也有 post-commit 盖章。配套：post-commit/post-checkout/pre-push 钩子、`/review-loop` 命令、知识模块（`review-loop/module/review-loop.md`）与 e2e 套件。`.review-loop/.last-reviewed` 锚同时是开放评审契约——[opencode-agora](https://github.com/guangbin79/opencode-agora) 在 `done` 时校验、合并前复检的就是它。
 
